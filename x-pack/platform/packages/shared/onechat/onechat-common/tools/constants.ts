@@ -23,6 +23,9 @@ export const platformCoreTools = {
   getDocumentById: platformCoreTool('get_document_by_id'),
   generateEsql: platformCoreTool('generate_esql'),
   executeEsql: platformCoreTool('execute_esql'),
+  searchCodeSemantic: platformCoreTool('search_code_semantic'),
+  getCodeByPath: platformCoreTool('get_code_by_path'),
+  findCodeBySymbol: platformCoreTool('find_code_by_symbol'),
 } as const;
 
 /**

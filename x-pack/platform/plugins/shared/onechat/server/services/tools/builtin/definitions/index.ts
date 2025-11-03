@@ -12,3 +12,6 @@ export { indexExplorerTool } from './index_explorer';
 export { generateEsqlTool } from './generate_esql';
 export { executeEsqlTool } from './execute_esql';
 export { searchTool } from './search';
+export { searchCodeSemanticTool } from './search_code_semantic';
+export { getCodeByPathTool } from './get_code_by_path';
+export { findCodeBySymbolTool } from './find_code_by_symbol';

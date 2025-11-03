@@ -15,6 +15,9 @@ import {
   getIndexMappingsTool,
   listIndicesTool,
   indexExplorerTool,
+  searchCodeSemanticTool,
+  getCodeByPathTool,
+  findCodeBySymbolTool,
 } from './definitions';
 
 export const registerBuiltinTools = ({ registry }: { registry: BuiltinToolRegistry }) => {
@@ -26,6 +29,9 @@ export const registerBuiltinTools = ({ registry }: { registry: BuiltinToolRegist
     getIndexMappingsTool(),
     listIndicesTool(),
     indexExplorerTool(),
+    searchCodeSemanticTool(),
+    getCodeByPathTool(),
+    findCodeBySymbolTool(),
   ];
 
   tools.forEach((tool) => {
