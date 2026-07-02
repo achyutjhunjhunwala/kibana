@@ -230,7 +230,7 @@ describe('ConnectorStepImpl', () => {
     expect(result.error.message).toBe('connector failed');
   });
 
-  it('describes the connector step when the error carries no message (no bare "Unknown error")', async () => {
+  it('describes the connector step when the error carries no message', async () => {
     const { stepExecutionRuntime, connectorExecutor, workflowRuntime, workflowLogger } =
       createMocks();
 

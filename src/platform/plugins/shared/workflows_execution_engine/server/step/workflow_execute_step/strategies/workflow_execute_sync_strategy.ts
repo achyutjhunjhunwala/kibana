@@ -192,18 +192,8 @@ export class WorkflowExecuteSyncStrategy {
   }
 
   /**
-   * Builds the error a parent step reports when a sub-workflow did not complete.
-   *
-   * The child's own top-level `error` is the richest source, so it is preferred.
-   * When the child carries no top-level error — the common case for `TIMED_OUT`
-   * (the timeout zone fails the running step then clears the workflow-level error,
-   * see `enter_workflow_timeout_zone_node_impl`) and `SKIPPED`/cancelled children
-   * (concurrency/operator drops set `cancellationReason` but no error) — fall back
-   * to the most specific detail still on the persisted child instead of a bare
-   * `Sub-workflow execution <status>` string:
-   *  - `cancellationReason` (human-readable) for skipped/cancelled children;
-   *  - the failing child step's own id + error for a timeout, so the parent event
-   *    names *where* and *why* the child stopped rather than only that it did.
+   * Builds the error a parent step reports when a sub-workflow did not complete,
+   * preferring the most specific detail available over a bare status string.
    */
   private async buildChildFailureError(execution: EsWorkflowExecution): Promise<ExecutionError> {
     if (execution.error) {
@@ -234,12 +224,10 @@ export class WorkflowExecuteSyncStrategy {
   }
 
   /**
-   * Returns the child step execution most responsible for the child's failure:
-   * the latest step still carrying an `error` (e.g. the step the timeout zone
-   * failed with a `TimeoutError`), else the latest non-terminal step if any.
-   * Returns undefined when nothing is recoverable (a failure between steps, or an
-   * older execution without `stepExecutionIds`). Uses the realtime mget path, so a
-   * `refresh: false` step write is still visible.
+   * Finds the child step most responsible for the failure. On timeout the zone
+   * fails the running step with a `TimeoutError` and clears the workflow-level
+   * error, so we look for the latest step carrying an error (or still running)
+   * rather than a top-level error that is no longer there.
    */
   private async findFailingChildStep(
     execution: EsWorkflowExecution
@@ -260,8 +248,7 @@ export class WorkflowExecuteSyncStrategy {
         step.globalExecutionIndex > latest.globalExecutionIndex ? step : latest
       );
     } catch (error) {
-      // Enrichment is best-effort — never let it turn a child failure into a
-      // parent-step crash. The caller falls back to the plain status message.
+      // Best-effort: a read failure must not crash the parent step.
       this.workflowLogger?.logDebug(
         `Failed to read child step executions for failure enrichment: ${
           error instanceof Error ? error.message : String(error)

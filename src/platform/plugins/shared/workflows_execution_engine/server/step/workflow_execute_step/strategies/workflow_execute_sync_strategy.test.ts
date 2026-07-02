@@ -254,16 +254,13 @@ describe('WorkflowExecuteSyncStrategy', () => {
       expect(result.error!.message).toContain('timed_out');
     });
 
-    it('names the failing step and its error when the child timed out (timeout zone failed the step)', async () => {
+    it('names the failing step and its error when the child timed out', async () => {
       mockExecRepo.getWorkflowExecutionById.mockResolvedValue({
         id: 'child-exec-1',
         status: ExecutionStatus.TIMED_OUT,
         stepExecutionIds: ['step-1', 'step-2'],
       } as any);
 
-      // The workflow-level timeout zone marks the running step FAILED with a
-      // TimeoutError (see enter_workflow_timeout_zone_node_impl), so at read time
-      // the step is terminal but carries the error we want to surface.
       mockStepRepo.getStepExecutionsByWorkflowExecution.mockResolvedValue([
         {
           id: 'step-1',
