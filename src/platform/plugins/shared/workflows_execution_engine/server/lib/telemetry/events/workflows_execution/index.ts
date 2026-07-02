@@ -62,6 +62,10 @@ const baseWorkflowExecutionSchema: RootSchema<{
   parentWorkflowId?: string;
   parentWorkflowInvocation?: 'sync' | 'async';
   eventChainDepth?: number;
+  inputTokensUsed?: number;
+  outputTokensUsed?: number;
+  cachedTokensUsed?: number;
+  totalTokensUsed?: number;
 }> = {
   workflowExecutionId: {
     type: 'keyword',
@@ -173,6 +177,38 @@ const baseWorkflowExecutionSchema: RootSchema<{
     _meta: {
       description:
         'Event-chain depth when this run was scheduled from event-driven emits. Distinct from compositionDepth.',
+      optional: true,
+    },
+  },
+  inputTokensUsed: {
+    type: 'long',
+    _meta: {
+      description:
+        'Total LLM input (prompt) tokens used by token-reporting steps in this execution.',
+      optional: true,
+    },
+  },
+  outputTokensUsed: {
+    type: 'long',
+    _meta: {
+      description:
+        'Total LLM output (completion) tokens used by token-reporting steps in this execution.',
+      optional: true,
+    },
+  },
+  cachedTokensUsed: {
+    type: 'long',
+    _meta: {
+      description:
+        'Total cached input tokens reused by token-reporting steps in this execution. This is a subset of inputTokensUsed.',
+      optional: true,
+    },
+  },
+  totalTokensUsed: {
+    type: 'long',
+    _meta: {
+      description:
+        'Total LLM tokens used by token-reporting steps in this execution. This is inputTokensUsed + outputTokensUsed.',
       optional: true,
     },
   },

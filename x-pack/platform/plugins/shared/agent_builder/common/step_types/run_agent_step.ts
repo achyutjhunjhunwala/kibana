@@ -100,6 +100,10 @@ export const OutputSchema = z.object({
       usage: z.object({
         inputTokens: z.number().describe('Total input tokens consumed across all LLM rounds.'),
         outputTokens: z.number().describe('Total output tokens produced across all LLM rounds.'),
+        cachedTokens: z
+          .number()
+          .optional()
+          .describe('Cached input tokens reused across all LLM rounds. Subset of inputTokens.'),
         totalTokens: z.number().describe('Sum of input and output tokens across all LLM rounds.'),
       }),
     })

@@ -31,7 +31,7 @@ export const getRunAgentStepDefinition = (serviceManager: ServiceManager) => {
     handler: async (context) => {
       // Accumulate token usage outside the try/catch so partial counts are
       // preserved even if the event stream errors mid-execution.
-      const usage = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
+      const usage = { inputTokens: 0, outputTokens: 0, cachedTokens: 0, totalTokens: 0 };
 
       try {
         const { schema, message, conversation_id: conversationId, attachments } = context.input;
@@ -98,6 +98,7 @@ export const getRunAgentStepDefinition = (serviceManager: ServiceManager) => {
                 if (modelUsage) {
                   usage.inputTokens += modelUsage.input_tokens;
                   usage.outputTokens += modelUsage.output_tokens;
+                  usage.cachedTokens += modelUsage.cached_input_tokens ?? 0;
                   usage.totalTokens += modelUsage.input_tokens + modelUsage.output_tokens;
                 }
               }

@@ -474,7 +474,13 @@ describe('ai.agent workflow step (Agent Builder)', () => {
           round: {
             id: 'r-1',
             response: { message: 'hello' },
-            model_usage: { connector_id: 'c', llm_calls: 1, input_tokens: 100, output_tokens: 50 },
+            model_usage: {
+              connector_id: 'c',
+              llm_calls: 1,
+              input_tokens: 100,
+              output_tokens: 50,
+              cached_input_tokens: 20,
+            },
           },
         },
       });
@@ -487,6 +493,7 @@ describe('ai.agent workflow step (Agent Builder)', () => {
       expect(res.output?.metadata?.usage).toEqual({
         inputTokens: 100,
         outputTokens: 50,
+        cachedTokens: 20,
         totalTokens: 150,
       });
     });
@@ -504,6 +511,7 @@ describe('ai.agent workflow step (Agent Builder)', () => {
                 llm_calls: 1,
                 input_tokens: 200,
                 output_tokens: 80,
+                cached_input_tokens: 50,
               },
             },
           },
@@ -519,6 +527,7 @@ describe('ai.agent workflow step (Agent Builder)', () => {
                 llm_calls: 1,
                 input_tokens: 300,
                 output_tokens: 120,
+                cached_input_tokens: 70,
               },
             },
           },
@@ -536,6 +545,7 @@ describe('ai.agent workflow step (Agent Builder)', () => {
       expect(res.output?.metadata?.usage).toEqual({
         inputTokens: 500,
         outputTokens: 200,
+        cachedTokens: 120,
         totalTokens: 700,
       });
     });
@@ -560,6 +570,7 @@ describe('ai.agent workflow step (Agent Builder)', () => {
       expect(res.output?.metadata?.usage).toEqual({
         inputTokens: 0,
         outputTokens: 0,
+        cachedTokens: 0,
         totalTokens: 0,
       });
     });
@@ -581,6 +592,7 @@ describe('ai.agent workflow step (Agent Builder)', () => {
                 llm_calls: 1,
                 input_tokens: 150,
                 output_tokens: 60,
+                cached_input_tokens: 30,
               },
             },
           },
@@ -598,6 +610,7 @@ describe('ai.agent workflow step (Agent Builder)', () => {
       expect(res.output?.metadata?.usage).toEqual({
         inputTokens: 150,
         outputTokens: 60,
+        cachedTokens: 30,
         totalTokens: 210,
       });
     });

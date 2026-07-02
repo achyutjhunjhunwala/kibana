@@ -78,6 +78,24 @@ export interface BaseWorkflowExecutionTelemetryParams {
    * Not sub-workflow composition; omitted when absent.
    */
   eventChainDepth?: number;
+  /**
+   * Total LLM input (prompt) tokens used by token-reporting steps in this execution.
+   */
+  inputTokensUsed?: number;
+  /**
+   * Total LLM output (completion) tokens used by token-reporting steps in this execution.
+   */
+  outputTokensUsed?: number;
+  /**
+   * Total cached input tokens reused by token-reporting steps in this execution.
+   * This is a subset of inputTokensUsed.
+   */
+  cachedTokensUsed?: number;
+  /**
+   * Total LLM tokens used by token-reporting steps in this execution.
+   * This is inputTokensUsed + outputTokensUsed.
+   */
+  totalTokensUsed?: number;
 }
 
 /** Output size statistics derived from WorkflowExecutionState. */

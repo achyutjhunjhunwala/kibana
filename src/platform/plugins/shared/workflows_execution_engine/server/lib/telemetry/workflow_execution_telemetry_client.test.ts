@@ -247,6 +247,45 @@ describe('WorkflowExecutionTelemetryClient', () => {
       expect(eventData).not.toHaveProperty('queueDelayMs');
     });
 
+    it('should include token usage totals when execution usage is present', () => {
+      const workflowExecution = createMockWorkflowExecution({
+        usage: {
+          inputTokens: 100,
+          outputTokens: 40,
+          cachedTokens: 25,
+          totalTokens: 140,
+        },
+      });
+
+      client.reportWorkflowExecutionCompleted({
+        workflowExecution,
+        stepExecutions: [],
+      });
+
+      const [, eventData] = telemetry.reportEvent.mock.calls[0];
+      expect(eventData).toMatchObject({
+        inputTokensUsed: 100,
+        outputTokensUsed: 40,
+        cachedTokensUsed: 25,
+        totalTokensUsed: 140,
+      });
+    });
+
+    it('should omit token usage totals when execution usage is absent', () => {
+      const workflowExecution = createMockWorkflowExecution();
+
+      client.reportWorkflowExecutionCompleted({
+        workflowExecution,
+        stepExecutions: [],
+      });
+
+      const [, eventData] = telemetry.reportEvent.mock.calls[0];
+      expect(eventData).not.toHaveProperty('inputTokensUsed');
+      expect(eventData).not.toHaveProperty('outputTokensUsed');
+      expect(eventData).not.toHaveProperty('cachedTokensUsed');
+      expect(eventData).not.toHaveProperty('totalTokensUsed');
+    });
+
     it('should omit composition fields for top-level executions', () => {
       const workflowExecution = createMockWorkflowExecution({ triggeredBy: 'manual' });
 
@@ -477,6 +516,56 @@ describe('WorkflowExecutionTelemetryClient', () => {
         parentWorkflowInvocation: 'async',
         errorMessage: 'Child failed',
       });
+    });
+
+    it('should include token usage totals when failed execution usage is present', () => {
+      const workflowExecution = createMockWorkflowExecution({
+        status: ExecutionStatus.FAILED,
+        error: {
+          message: 'Workflow failed',
+          type: 'ExecutionError',
+        },
+        usage: {
+          inputTokens: 300,
+          outputTokens: 120,
+          cachedTokens: 80,
+          totalTokens: 420,
+        },
+      });
+
+      client.reportWorkflowExecutionFailed({
+        workflowExecution,
+        stepExecutions: [],
+      });
+
+      const [, eventData] = telemetry.reportEvent.mock.calls[0];
+      expect(eventData).toMatchObject({
+        inputTokensUsed: 300,
+        outputTokensUsed: 120,
+        cachedTokensUsed: 80,
+        totalTokensUsed: 420,
+      });
+    });
+
+    it('should omit token usage totals when failed execution usage is absent', () => {
+      const workflowExecution = createMockWorkflowExecution({
+        status: ExecutionStatus.FAILED,
+        error: {
+          message: 'Workflow failed',
+          type: 'ExecutionError',
+        },
+      });
+
+      client.reportWorkflowExecutionFailed({
+        workflowExecution,
+        stepExecutions: [],
+      });
+
+      const [, eventData] = telemetry.reportEvent.mock.calls[0];
+      expect(eventData).not.toHaveProperty('inputTokensUsed');
+      expect(eventData).not.toHaveProperty('outputTokensUsed');
+      expect(eventData).not.toHaveProperty('cachedTokensUsed');
+      expect(eventData).not.toHaveProperty('totalTokensUsed');
     });
   });
 

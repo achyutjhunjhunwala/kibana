@@ -190,6 +190,12 @@ function buildBaseExecutionTelemetryFields(
     ...(executionMetadata.eventChainDepth !== undefined && {
       eventChainDepth: executionMetadata.eventChainDepth,
     }),
+    ...(workflowExecution.usage && {
+      inputTokensUsed: workflowExecution.usage.inputTokens,
+      outputTokensUsed: workflowExecution.usage.outputTokens,
+      cachedTokensUsed: workflowExecution.usage.cachedTokens ?? 0,
+      totalTokensUsed: workflowExecution.usage.totalTokens,
+    }),
   };
 }
 

@@ -1161,22 +1161,39 @@ describe('WorkflowExecutionState', () => {
 
   describe('accumulateUsage', () => {
     it('sets the per-execution usage from the first reporting step', () => {
-      underTest.accumulateUsage({ inputTokens: 100, outputTokens: 50, totalTokens: 150 });
+      underTest.accumulateUsage({
+        inputTokens: 100,
+        outputTokens: 50,
+        cachedTokens: 25,
+        totalTokens: 150,
+      });
 
       expect(underTest.getWorkflowExecution().usage).toEqual({
         inputTokens: 100,
         outputTokens: 50,
+        cachedTokens: 25,
         totalTokens: 150,
       });
     });
 
     it('sums usage across multiple steps', () => {
-      underTest.accumulateUsage({ inputTokens: 100, outputTokens: 50, totalTokens: 150 });
-      underTest.accumulateUsage({ inputTokens: 200, outputTokens: 80, totalTokens: 280 });
+      underTest.accumulateUsage({
+        inputTokens: 100,
+        outputTokens: 50,
+        cachedTokens: 25,
+        totalTokens: 150,
+      });
+      underTest.accumulateUsage({
+        inputTokens: 200,
+        outputTokens: 80,
+        cachedTokens: 40,
+        totalTokens: 280,
+      });
 
       expect(underTest.getWorkflowExecution().usage).toEqual({
         inputTokens: 300,
         outputTokens: 130,
+        cachedTokens: 65,
         totalTokens: 430,
       });
     });
@@ -1188,7 +1205,7 @@ describe('WorkflowExecutionState', () => {
       expect(workflowExecutionRepository.updateWorkflowExecution).toHaveBeenCalledWith(
         expect.objectContaining({
           id: 'test-workflow-execution-id',
-          usage: { inputTokens: 100, outputTokens: 50, totalTokens: 150 },
+          usage: { inputTokens: 100, outputTokens: 50, cachedTokens: 0, totalTokens: 150 },
         }),
         {}
       );

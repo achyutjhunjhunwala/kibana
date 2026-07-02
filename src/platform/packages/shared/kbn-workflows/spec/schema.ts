@@ -878,6 +878,10 @@ export { WorkflowSchemaForAutocompleteBase };
 export const WorkflowTokenUsageSchema = z.object({
   inputTokens: z.number().describe('Total input (prompt) tokens consumed.'),
   outputTokens: z.number().describe('Total output (completion) tokens produced.'),
+  cachedTokens: z
+    .number()
+    .optional()
+    .describe('Cached input tokens reused. This is a subset of inputTokens.'),
   totalTokens: z.number().describe('Sum of input and output tokens.'),
 });
 

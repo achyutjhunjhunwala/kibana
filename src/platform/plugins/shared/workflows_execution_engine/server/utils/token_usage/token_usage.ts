@@ -14,7 +14,8 @@ import type { WorkflowTokenUsage } from '@kbn/workflows';
  * can aggregate it uniformly. Steps emit usage under `output.metadata.usage`
  * (the contract established by the `ai.agent` step); this helper reads that
  * shape defensively and returns a `WorkflowTokenUsage` only when at least one
- * of `inputTokens` / `outputTokens` is present and valid.
+ * of `inputTokens` / `outputTokens` is present and valid. `cachedTokens`, when
+ * present, is preserved as a subset of input tokens.
  *
  * Returns `undefined` for any step that did not report usage (the common
  * case), so callers can treat "no usage" and "zero usage" distinctly and avoid
@@ -44,6 +45,7 @@ export const extractTokenUsage = (output: unknown): WorkflowTokenUsage | undefin
 
   const inputTokens = toFiniteNumber((usage as { inputTokens?: unknown }).inputTokens);
   const outputTokens = toFiniteNumber((usage as { outputTokens?: unknown }).outputTokens);
+  const cachedTokens = toFiniteNumber((usage as { cachedTokens?: unknown }).cachedTokens);
 
   // A step reported usage only if at least one of the token fields is a valid
   // number. Otherwise treat it as "no usage" so we don't tag the step.
@@ -57,6 +59,7 @@ export const extractTokenUsage = (output: unknown): WorkflowTokenUsage | undefin
   return {
     inputTokens: normalizedInput,
     outputTokens: normalizedOutput,
+    ...(cachedTokens !== undefined && { cachedTokens }),
     totalTokens: normalizedInput + normalizedOutput,
   };
 };
@@ -80,6 +83,7 @@ export const sumTokenUsage = (
   return {
     inputTokens: (current?.inputTokens ?? 0) + (next?.inputTokens ?? 0),
     outputTokens: (current?.outputTokens ?? 0) + (next?.outputTokens ?? 0),
+    cachedTokens: (current?.cachedTokens ?? 0) + (next?.cachedTokens ?? 0),
     totalTokens: (current?.totalTokens ?? 0) + (next?.totalTokens ?? 0),
   };
 };

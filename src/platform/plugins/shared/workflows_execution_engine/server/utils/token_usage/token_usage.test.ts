@@ -14,9 +14,11 @@ describe('extractTokenUsage', () => {
     expect(
       extractTokenUsage({
         message: 'hi',
-        metadata: { usage: { inputTokens: 100, outputTokens: 50, totalTokens: 150 } },
+        metadata: {
+          usage: { inputTokens: 100, outputTokens: 50, cachedTokens: 25, totalTokens: 150 },
+        },
       })
-    ).toEqual({ inputTokens: 100, outputTokens: 50, totalTokens: 150 });
+    ).toEqual({ inputTokens: 100, outputTokens: 50, cachedTokens: 25, totalTokens: 150 });
   });
 
   it('recomputes totalTokens from input + output (ignores reported total)', () => {
@@ -33,6 +35,14 @@ describe('extractTokenUsage', () => {
       outputTokens: 0,
       totalTokens: 100,
     });
+  });
+
+  it('ignores cachedTokens as a usage signal when input/output tokens are absent', () => {
+    expect(
+      extractTokenUsage({
+        metadata: { usage: { cachedTokens: 25 } },
+      })
+    ).toBeUndefined();
   });
 
   it.each([
@@ -56,16 +66,16 @@ describe('sumTokenUsage', () => {
   it('sums two usage records field by field', () => {
     expect(
       sumTokenUsage(
-        { inputTokens: 100, outputTokens: 50, totalTokens: 150 },
-        { inputTokens: 200, outputTokens: 80, totalTokens: 280 }
+        { inputTokens: 100, outputTokens: 50, cachedTokens: 10, totalTokens: 150 },
+        { inputTokens: 200, outputTokens: 80, cachedTokens: 20, totalTokens: 280 }
       )
-    ).toEqual({ inputTokens: 300, outputTokens: 130, totalTokens: 430 });
+    ).toEqual({ inputTokens: 300, outputTokens: 130, cachedTokens: 30, totalTokens: 430 });
   });
 
   it('returns a fresh copy of the defined operand when the other is undefined', () => {
     const usage = { inputTokens: 1, outputTokens: 2, totalTokens: 3 };
-    expect(sumTokenUsage(undefined, usage)).toEqual(usage);
-    expect(sumTokenUsage(usage, undefined)).toEqual(usage);
+    expect(sumTokenUsage(undefined, usage)).toEqual({ ...usage, cachedTokens: 0 });
+    expect(sumTokenUsage(usage, undefined)).toEqual({ ...usage, cachedTokens: 0 });
     // Never aliases an operand, so the per-execution total and a step's own
     // usage record can never mutate each other.
     expect(sumTokenUsage(undefined, usage)).not.toBe(usage);
