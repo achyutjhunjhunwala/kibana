@@ -13,7 +13,11 @@ import type { JsonValue } from '@kbn/utility-types';
 import type { EsWorkflow } from '@kbn/workflows';
 import { ExecutionStatus, isTerminalStatus, toWorkflowExecutionEngineModel } from '@kbn/workflows';
 import { ExecutionError } from '@kbn/workflows/server';
-import type { WorkflowStepExecutionDto } from '@kbn/workflows/types/v1';
+import type {
+  EsWorkflowExecution,
+  EsWorkflowStepExecution,
+  WorkflowStepExecutionDto,
+} from '@kbn/workflows/types/v1';
 import type { StepExecutionRepository } from '../../../repositories/step_execution_repository';
 import type { WorkflowExecutionRepository } from '../../../repositories/workflow_execution_repository';
 import type { WorkflowsExecutionEnginePluginStart } from '../../../types';
@@ -160,13 +164,7 @@ export class WorkflowExecuteSyncStrategy {
       }
 
       if (execution.status !== ExecutionStatus.COMPLETED) {
-        const error = execution.error
-          ? new ExecutionError(execution.error)
-          : new ExecutionError({
-              type: 'Error',
-              message: `Sub-workflow execution ${execution.status}`,
-            });
-        return { status: 'failed', error };
+        return { status: 'failed', error: await this.buildChildFailureError(execution) };
       }
 
       let output: JsonValue;
@@ -190,6 +188,86 @@ export class WorkflowExecuteSyncStrategy {
       };
     } catch (error) {
       return { status: 'failed', error: error as Error };
+    }
+  }
+
+  /**
+   * Builds the error a parent step reports when a sub-workflow did not complete.
+   *
+   * The child's own top-level `error` is the richest source, so it is preferred.
+   * When the child carries no top-level error — the common case for `TIMED_OUT`
+   * (the timeout zone fails the running step then clears the workflow-level error,
+   * see `enter_workflow_timeout_zone_node_impl`) and `SKIPPED`/cancelled children
+   * (concurrency/operator drops set `cancellationReason` but no error) — fall back
+   * to the most specific detail still on the persisted child instead of a bare
+   * `Sub-workflow execution <status>` string:
+   *  - `cancellationReason` (human-readable) for skipped/cancelled children;
+   *  - the failing child step's own id + error for a timeout, so the parent event
+   *    names *where* and *why* the child stopped rather than only that it did.
+   */
+  private async buildChildFailureError(execution: EsWorkflowExecution): Promise<ExecutionError> {
+    if (execution.error) {
+      return new ExecutionError(execution.error);
+    }
+
+    if (execution.cancellationReason) {
+      return new ExecutionError({
+        type: 'Error',
+        message: `Sub-workflow execution ${execution.status}: ${execution.cancellationReason}`,
+      });
+    }
+
+    const failingStep = await this.findFailingChildStep(execution);
+    if (failingStep) {
+      const stepType = failingStep.stepType ? ` (${failingStep.stepType})` : '';
+      const detail = failingStep.error?.message ? `: ${failingStep.error.message}` : '';
+      return new ExecutionError({
+        type: 'Error',
+        message: `Sub-workflow execution ${execution.status} at step '${failingStep.stepId}'${stepType}${detail}`,
+      });
+    }
+
+    return new ExecutionError({
+      type: 'Error',
+      message: `Sub-workflow execution ${execution.status}`,
+    });
+  }
+
+  /**
+   * Returns the child step execution most responsible for the child's failure:
+   * the latest step still carrying an `error` (e.g. the step the timeout zone
+   * failed with a `TimeoutError`), else the latest non-terminal step if any.
+   * Returns undefined when nothing is recoverable (a failure between steps, or an
+   * older execution without `stepExecutionIds`). Uses the realtime mget path, so a
+   * `refresh: false` step write is still visible.
+   */
+  private async findFailingChildStep(
+    execution: EsWorkflowExecution
+  ): Promise<EsWorkflowStepExecution | undefined> {
+    try {
+      const stepExecutions =
+        await this.stepExecutionRepository.getStepExecutionsByWorkflowExecution(
+          execution.id,
+          execution.stepExecutionIds
+        );
+      const candidates = stepExecutions.filter(
+        (step) => step.error != null || !isTerminalStatus(step.status)
+      );
+      if (candidates.length === 0) {
+        return undefined;
+      }
+      return candidates.reduce((latest, step) =>
+        step.globalExecutionIndex > latest.globalExecutionIndex ? step : latest
+      );
+    } catch (error) {
+      // Enrichment is best-effort — never let it turn a child failure into a
+      // parent-step crash. The caller falls back to the plain status message.
+      this.workflowLogger?.logDebug(
+        `Failed to read child step executions for failure enrichment: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+      return undefined;
     }
   }
 

@@ -199,7 +199,14 @@ export class ConnectorStepImpl extends BaseAtomicNodeImplementation<ConnectorSte
           error: undefined,
         };
       } else {
-        const errorMsg = serviceMessage ?? message ?? 'Unknown error';
+        // When the connector returns a failure with no message body (the agent
+        // path can return a bare error), fall back to a descriptor naming the
+        // step and its reported status instead of the opaque 'Unknown error'
+        // that would otherwise land verbatim in the failed-workflow event.
+        const errorMsg =
+          serviceMessage ??
+          message ??
+          `Connector '${step.name}' (${stepType}) failed with status '${status}'`;
 
         if (errorMsg.includes('maxContentLength')) {
           if (!usesWorkflowTransportLimit) {
