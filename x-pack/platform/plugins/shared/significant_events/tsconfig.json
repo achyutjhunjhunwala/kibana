@@ -81,5 +81,7 @@
     "@kbn/nightshift-investigations-plugin",
     "@kbn/test",
     "@kbn/task-manager-plugin",
+    "@kbn/es",
+    "@kbn/test-es-server",
   ]
 }
