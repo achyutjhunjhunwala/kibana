@@ -8,6 +8,15 @@
 export { consumeRunQuota } from './consume';
 export { waitForInvestigationEvidence } from './investigation_evidence';
 export {
+  ensureRunQuotaHousekeepingScheduled,
+  registerRunQuotaHousekeepingTask,
+  RUN_QUOTA_HOUSEKEEPING_INTERVAL,
+  RUN_QUOTA_HOUSEKEEPING_INTERVAL_MS,
+  RUN_QUOTA_HOUSEKEEPING_TASK_ID,
+  RUN_QUOTA_HOUSEKEEPING_TASK_TYPE,
+  runRunQuotaHousekeeping,
+} from './housekeeping';
+export {
   createRunQuotaExecutionReader,
   validateHeartbeatProvenance,
   validateInvestigationProvenance,
@@ -21,6 +30,14 @@ export type {
 } from './provenance';
 export { reserveInvestigationRunQuota } from './reserve';
 export type { RunQuotaEventResolver } from './reserve';
+export { computeRunQuotaDriverHealth } from './reachability';
+export type { DetectionReachabilityTarget, KiReachabilityTarget } from './reachability';
+export { deleteExpiredRunQuotaDocuments, sweepExpiredRunQuotaDocuments } from './retention';
+export type { RunQuotaRetentionRepository } from './retention';
+export {
+  applyRunQuotaSettingsApplicabilityTransition,
+  recordRunQuotaScheduleTransition,
+} from './transitions';
 export {
   createRunQuotaInternalRepository,
   createDefaultRunQuotaSettingsAttributes,

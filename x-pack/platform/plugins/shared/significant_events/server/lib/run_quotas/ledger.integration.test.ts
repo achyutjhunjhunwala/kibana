@@ -20,6 +20,7 @@ import type { RunQuotaExecutionReader, RunQuotaWorkflowExecution } from './prove
 import { validateWorkerProvenance } from './provenance';
 import { getRunQuotaLedgerId, mutateRunQuotaLedger, mutateRunQuotaSettings } from './repository';
 import { reserveInvestigationRunQuota } from './reserve';
+import { deleteExpiredRunQuotaDocuments } from './retention';
 import {
   RUN_QUOTA_LEDGER_SO_TYPE,
   RUN_QUOTA_MAX_DECISIONS,
@@ -610,6 +611,51 @@ describe('investigation ledger integration', () => {
         getRunQuotaLedgerId('2026-08-31', 'investigation')
       )
     ).toBeUndefined();
+  });
+});
+
+describe('retention pagination', () => {
+  it('drains page one while deleting so documents are not skipped', async () => {
+    const idsByType = new Map<string, string[]>([
+      [RUN_QUOTA_LEDGER_SO_TYPE, Array.from({ length: 250 }, (_, index) => `ledger-${index}`)],
+      [
+        RUN_QUOTA_WORKER_DECISION_SO_TYPE,
+        Array.from({ length: 150 }, (_, index) => `decision-${index}`),
+      ],
+    ]);
+    const find = jest.fn(async ({ type, page, perPage }) => {
+      const ids = idsByType.get(type as string) ?? [];
+      return {
+        page,
+        per_page: perPage,
+        total: ids.length,
+        saved_objects: ids.slice(0, perPage).map((id) => ({
+          id,
+          type,
+          attributes: {},
+          references: [],
+        })),
+      };
+    });
+    const deleteSavedObject = jest.fn(async (type: string, id: string) => {
+      idsByType.set(
+        type,
+        (idsByType.get(type) ?? []).filter((candidate) => candidate !== id)
+      );
+      return {};
+    });
+
+    await expect(
+      deleteExpiredRunQuotaDocuments({
+        internalRepository: {
+          find,
+          delete: deleteSavedObject,
+        } as never,
+        cutoffDay: '2026-08-24',
+      })
+    ).resolves.toBe(400);
+    expect([...idsByType.values()].flat()).toHaveLength(0);
+    expect(find.mock.calls.every(([request]) => request.page === 1)).toBe(true);
   });
 });
 

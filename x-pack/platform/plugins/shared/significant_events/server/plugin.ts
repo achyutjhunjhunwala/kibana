@@ -21,7 +21,11 @@ import type { Subscription } from 'rxjs';
 import { PROJECT_ROUTING_ALL } from '@kbn/cps-server-utils';
 import { getRelayAppConnectionSavedObjectType } from './lib/slack_app/saved_object';
 import { getSignificantEventsMaintenanceStateSavedObjectType } from './lib/maintenance/saved_object';
-import { getRunQuotaSavedObjectTypes } from './lib/run_quotas';
+import {
+  ensureRunQuotaHousekeepingScheduled,
+  getRunQuotaSavedObjectTypes,
+  registerRunQuotaHousekeepingTask,
+} from './lib/run_quotas';
 import {
   createSignificantEventsMaintenanceService,
   type SignificantEventsMaintenanceService,
@@ -125,6 +129,12 @@ export class SignificantEventsPlugin
     core.savedObjects.registerType(getRelayAppConnectionSavedObjectType());
     core.savedObjects.registerType(getSignificantEventsMaintenanceStateSavedObjectType());
     getRunQuotaSavedObjectTypes().forEach((type) => core.savedObjects.registerType(type));
+    registerRunQuotaHousekeepingTask({
+      taskManager: plugins.taskManager,
+      core,
+      getServer: () => this.server,
+      logger: this.logger.get('run-quota-housekeeping'),
+    });
 
     this.ebtTelemetryService.setup(core.analytics);
 
@@ -383,6 +393,13 @@ export class SignificantEventsPlugin
 
       this.server.relayClient = plugins.actions.getRelayClient();
     }
+    void ensureRunQuotaHousekeepingScheduled(plugins.taskManager).catch((error: unknown) => {
+      this.logger.error(
+        `Failed to schedule run quota housekeeping: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    });
 
     // Availability is the same requirement registry that gates requests, so a deployment never gets
     // resources it cannot run. Only the flag and the license change at runtime, so only those feed
