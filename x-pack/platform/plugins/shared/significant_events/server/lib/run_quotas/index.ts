@@ -6,6 +6,7 @@
  */
 
 export { consumeRunQuota } from './consume';
+export { countRunQuotaWorkflowExecutions, RUN_QUOTA_WORKFLOW_IDS_BY_GROUP } from './counting';
 export { waitForInvestigationEvidence } from './investigation_evidence';
 export {
   ensureRunQuotaHousekeepingScheduled,
@@ -22,6 +23,7 @@ export {
   validateInvestigationProvenance,
   validateWorkerProvenance,
 } from './provenance';
+export { assertCanManageRunQuotas, canManageRunQuotas } from './privileges';
 export type {
   RunQuotaExecutionReader,
   RunQuotaWorkflowExecution,

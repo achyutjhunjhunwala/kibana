@@ -310,6 +310,10 @@ export class SignificantEventsPlugin
         logger: this.logger,
         managementApi: plugins.workflowsManagement.management,
         streamsKIsOnboardingClient,
+        getScheduledTask: async (taskId) => {
+          const [, startPlugins] = await core.getStartServices();
+          return startPlugins.taskManager.get(taskId);
+        },
       });
     }
 
